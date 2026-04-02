@@ -79,9 +79,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-heig
 <div class="bg"></div><div class="bg-dim"></div>
 <div class="app">
 <div class="topbar"><h1 id="tt" onclick="if(CUR)go('tree-screen');else go('home-screen')">Sood &amp; Sud</h1><button class="mb" onclick="tDr()">&#9776;</button></div>
-<div class="screen active" id="home-screen"><div class="welcome"><h2 style="margin-top:20px">Sood &amp; Sud Family Trees</h2><div id="treeList"><div class="loading">Loading...</div></div><button class="sbtn" style="margin-top:16px" onclick="newTree()">&#10133; New tree</button></div></div>
+<div class="screen active" id="home-screen"><div class="welcome"><h2 style="margin-top:20px">Sood &amp; Sud Family Trees</h2><div id="treeList"><div class="loading">Loading...</div></div><button class="sbtn" style="margin-top:16px" onclick="newTree()">&#10133; New tree</button>
+<div style="margin-top:12px"><button class="sbtn" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);box-shadow:none" onclick="showMega()">&#127758; View All Families</button></div></div></div>
 <div class="screen" id="setup-screen"><div class="glass" id="formArea"></div></div>
 <div class="screen" id="tree-screen"><div class="tscr"><div class="tinn" id="tree"></div></div></div>
+<div class="screen" id="mega-screen"><div class="tscr"><div class="tinn" id="mega"></div></div></div>
 <div class="screen" id="person-screen"><div class="glass" id="pd"></div></div>
 <div class="bnav" id="bn" style="display:none">
 <button onclick="backToList()" id="nh"><span class="bi">&#127968;</span>Home</button>
@@ -181,7 +183,7 @@ function buildForm(person,mode,ctx){var p=person||{};var area=document.getElemen
 function readForm(){return {name:(document.getElementById('ff_name')||{}).value?.trim()||'',nickname:(document.getElementById('ff_nick')||{}).value?.trim()||'',gender:(document.getElementById('ff_gender')||{}).value||'Male',dob:(document.getElementById('ff_dob')||{}).value?.trim()||'',dod:(document.getElementById('ff_dod')||{}).value?.trim()||'',location:(document.getElementById('ff_loc')||{}).value?.trim()||'',education1:(document.getElementById('ff_edu1')||{}).value?.trim()||'',education2:(document.getElementById('ff_edu2')||{}).value?.trim()||'',profession:(document.getElementById('ff_prof')||{}).value?.trim()||'',company:(document.getElementById('ff_comp')||{}).value?.trim()||'',about:(document.getElementById('ff_about')||{}).value?.trim()||'',hobbies:(document.getElementById('ff_hob')||{}).value?.trim()||''}}
 
 /* === NAV === */
-function go(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});document.getElementById(id).classList.add('active');document.querySelectorAll('.bnav button').forEach(function(b){b.classList.remove('active')});if(id==='tree-screen'){document.getElementById('nt').classList.add('active');renderTree()}if(id==='person-screen')document.getElementById('nm').classList.add('active');if(id==='home-screen'){document.getElementById('nh').classList.add('active');renderHome();document.getElementById('tt').textContent='Sood & Sud'}}
+function go(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});document.getElementById(id).classList.add('active');document.querySelectorAll('.bnav button').forEach(function(b){b.classList.remove('active')});if(id==='tree-screen'){document.getElementById('nt').classList.add('active');renderTree()}if(id==='person-screen')document.getElementById('nm').classList.add('active');if(id==='home-screen'){document.getElementById('nh').classList.add('active');renderHome();document.getElementById('tt').textContent='Sood & Sud';document.getElementById('bn').style.display='none'}}
 
 /* === TREE RENDER === */
 function findRoots(){var seen={},roots=[];for(var id in PP){if(seen[id])continue;var p=PP[id];if(!p.parents||!p.parents.length){var sp=p.spouseId;if(sp&&PP[sp]&&(!PP[sp].parents||!PP[sp].parents.length)){seen[id]=seen[sp]=1;roots.push([id,sp])}else if(!sp||!PP[sp]){var isSp=false;for(var o in PP){if(PP[o].spouseId===id&&PP[o].parents&&PP[o].parents.length){isSp=true;break}}if(!isSp){seen[id]=1;roots.push([id,null])}}}}if(!roots.length&&SELF&&PP[SELF]){var top=SELF;for(var i=0;i<20;i++){if(PP[top]&&PP[top].parents&&PP[top].parents.length)top=PP[top].parents[0];else break}roots.push([top,PP[top]?PP[top].spouseId:null])}return roots}
@@ -243,8 +245,65 @@ function xlPickTree(tid,tname){document.getElementById('xlb').innerHTML='<div cl
 function xlSave(tid,tname,pid,pname){if(!_xlPid||!PP[_xlPid])return;var myName=PP[_xlPid].name.split(' ')[0];var h='<p style="font-size:13px;color:rgba(255,255,255,.7);margin:0 0 14px">What is <b>'+esc(pname)+'</b> to <b>'+esc(myName)+'</b>?</p>';h+='<div class="rg">';h+='<button class="rb" onclick="xlComplete(\''+tid+'\',\''+esc(tname)+'\',\''+pid+'\',\''+esc(pname)+'\',\'parent\')"><span class="ic">&#128104;&#8205;&#129457;</span>Parent</button>';h+='<button class="rb" onclick="xlComplete(\''+tid+'\',\''+esc(tname)+'\',\''+pid+'\',\''+esc(pname)+'\',\'child\')"><span class="ic">&#128118;</span>Child</button>';h+='<button class="rb" onclick="xlComplete(\''+tid+'\',\''+esc(tname)+'\',\''+pid+'\',\''+esc(pname)+'\',\'spouse\')"><span class="ic">&#128141;</span>Spouse</button>';h+='<button class="rb" onclick="xlComplete(\''+tid+'\',\''+esc(tname)+'\',\''+pid+'\',\''+esc(pname)+'\',\'sibling\')"><span class="ic">&#128101;</span>Sibling</button>';h+='</div>';document.getElementById('xlb').innerHTML=h}
 function xlComplete(tid,tname,pid,pname,rel){if(!_xlPid||!PP[_xlPid])return;var inv={parent:'child',child:'parent',spouse:'spouse',sibling:'sibling'};if(!PP[_xlPid].links)PP[_xlPid].links=[];var exists=PP[_xlPid].links.some(function(l){return l.treeId===tid&&l.personId===pid});if(!exists){PP[_xlPid].links.push({treeId:tid,treeName:tname,personId:pid,personName:pname,relation:rel})}fbSaveTree();db.ref('trees/'+tid+'/pp/'+pid+'/links').once('value').then(function(snap){var arr=snap.val()||[];var ex=arr.some(function(l){return l.treeId===CUR&&l.personId===_xlPid});if(!ex){arr.push({treeId:CUR,treeName:TNAME,personId:_xlPid,personName:PP[_xlPid].name,relation:inv[rel]});db.ref('trees/'+tid+'/pp/'+pid+'/links').set(arr)}document.getElementById('xlm').classList.remove('show');showP(_xlPid)})}
 
-function rmLink(pid,idx){if(!PP[pid]||!PP[pid].links)return;PP[pid].links.splice(idx,1);fbSaveTree();showP(pid)}
+function rmLink(pid,idx){if(!PP[pid]||!PP[pid].links)return;var lk=PP[pid].links[idx];PP[pid].links.splice(idx,1);fbSaveTree();if(lk&&lk.treeId&&lk.personId){db.ref('trees/'+lk.treeId+'/pp/'+lk.personId+'/links').once('value').then(function(snap){var arr=snap.val()||[];arr=arr.filter(function(l){return !(l.treeId===CUR&&l.personId===pid)});db.ref('trees/'+lk.treeId+'/pp/'+lk.personId+'/links').set(arr.length?arr:null)})}showP(pid)}
 function goToLink(tid,pid){fbStopListen();document.getElementById('tree').innerHTML='<div class="loading">Loading...</div>';fbLoadTree(tid,function(ok){if(ok){document.getElementById('bn').style.display='flex';fbListenTree(tid);showP(pid)}})}
+
+/* === MEGA TREE === */
+function showMega(){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById('mega-screen').classList.add('active');
+  document.getElementById('bn').style.display='flex';
+  document.querySelectorAll('.bnav button').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('tt').textContent='All Families';
+  document.getElementById('mega').innerHTML='<div class="loading">Loading all trees...</div>';
+  db.ref('trees').once('value').then(function(snap){
+    var allT=snap.val()||{};var mPP={};var tNames={};
+    for(var tid in allT){var tr=allT[tid];if(!tr||!tr.pp)continue;tNames[tid]=tr.name||'Tree';
+      for(var pid in tr.pp){var p=JSON.parse(JSON.stringify(tr.pp[pid]));var mId=tid+'_'+pid;
+        p.id=mId;p._tn=tr.name;p._tid=tid;p._oid=pid;
+        if(p.spouseId)p.spouseId=tid+'_'+p.spouseId;
+        if(p.parents)p.parents=p.parents.map(function(x){return tid+'_'+x});
+        else p.parents=[];
+        if(p.children)p.children=p.children.map(function(x){return tid+'_'+x});
+        else p.children=[];
+        if(p.links&&p.links.length){p.links.forEach(function(lk){
+          if(!lk.relation)return;var oId=lk.treeId+'_'+lk.personId;
+          if(lk.relation==='parent'&&p.parents.indexOf(oId)===-1)p.parents.push(oId);
+          if(lk.relation==='child'&&p.children.indexOf(oId)===-1)p.children.push(oId);
+          if(lk.relation==='spouse'&&!p.spouseId)p.spouseId=oId;
+        })}
+        mPP[mId]=p;
+      }
+    }
+    renderMega(mPP,tNames);
+  })
+}
+function renderMega(mPP,tNames){
+  var seen={},roots=[];
+  for(var id in mPP){if(seen[id])continue;var p=mPP[id];
+    if(!p.parents||!p.parents.length||!p.parents.some(function(x){return mPP[x]})){
+      var sp=p.spouseId;
+      if(sp&&mPP[sp]&&(!mPP[sp].parents||!mPP[sp].parents.length||!mPP[sp].parents.some(function(x){return mPP[x]}))){
+        seen[id]=seen[sp]=1;roots.push([id,sp])}
+      else if(!sp||!mPP[sp]){var isSp=false;for(var o in mPP){if(mPP[o].spouseId===id&&mPP[o].parents&&mPP[o].parents.some(function(x){return mPP[x]})){isSp=true;break}}if(!isSp){seen[id]=1;roots.push([id,null])}}
+    }
+  }
+  function mGetKids(a,b){var c={};if(mPP[a])(mPP[a].children||[]).forEach(function(k){if(mPP[k])c[k]=1});if(b&&mPP[b])(mPP[b].children||[]).forEach(function(k){if(mPP[k])c[k]=1});return Object.keys(c)}
+  function mNode(id){var p=mPP[id];if(!p)return'';var g=p.gender==='Male'?'m':'f';
+    var sub=[];if(p.dob)sub.push('b.\u00a0'+esc(p.dob));if(p.dod)sub.push('d.\u00a0'+esc(p.dod));
+    var tn=p._tn||'';
+    return '<div class="node" onclick="megaTap(\''+p._tid+'\',\''+p._oid+'\')">'
+      +'<div class="av '+g+'">'+ini(p.name)+'</div>'
+      +'<div class="nlbl"><div class="nn">'+esc(p.name)+'</div>'
+      +(sub.length?'<div class="ns">'+sub.join(' &middot; ')+'</div>':'')
+      +'<div class="nr">'+esc(tn)+'</div></div></div>'}
+  function mCouple(a,b){return '<div class="couple">'+mNode(a)+(b&&mPP[b]?'<div class="cl">&#10084;&#65039;</div>'+mNode(b):'')+'</div>'}
+  function mUnit(pid,sid,depth){if(depth>10)return'';var kids=mGetKids(pid,sid);
+    var h='<div class="fam">'+mCouple(pid,sid);
+    if(kids.length){h+=vl(18);if(kids.length>1){h+='<div class="kw">';kids.forEach(function(cid,i){var cp=mPP[cid];if(!cp)return;var csp=cp.spouseId||null;var first=i===0,last=i===kids.length-1;h+='<div class="kc"><div style="display:flex;height:3px"><div style="flex:1;'+(first?'':'background:rgba(253,232,160,.65)')+'"></div><div style="width:3px;background:rgba(253,232,160,.65)"></div><div style="flex:1;'+(last?'':'background:rgba(253,232,160,.65)')+'"></div></div>';h+=vl(14);var gk=mGetKids(cid,csp);if(gk.length||csp)h+=mUnit(cid,csp,depth+1);else h+=mNode(cid);h+='</div>'});h+='</div>';}else{h+=vl(14);var cid=kids[0],cp=mPP[cid],csp=cp?cp.spouseId:null;if(mGetKids(cid,csp).length||csp)h+=mUnit(cid,csp,depth+1);else h+=mNode(cid)}}return h+'</div>'}
+  var html='';roots.forEach(function(r,i){if(i>0)html+='<div style="height:30px"></div>';html+=mUnit(r[0],r[1],0)});
+  document.getElementById('mega').innerHTML=html||'<div class="loading">No data or no cross-tree links found.</div>'}
+function megaTap(tid,pid){fbStopListen();fbLoadTree(tid,function(ok){if(ok){document.getElementById('bn').style.display='flex';fbListenTree(tid);showP(pid)}})}
 
 /* === MENU === */
 function tDr(){document.getElementById('dr').classList.toggle('show')}
