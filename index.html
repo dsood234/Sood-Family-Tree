@@ -79,8 +79,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-heig
 <div class="bg"></div><div class="bg-dim"></div>
 <div class="app">
 <div class="topbar"><h1 id="tt" onclick="if(CUR)go('tree-screen');else go('home-screen')">Sood &amp; Sud</h1><button class="mb" onclick="tDr()">&#9776;</button></div>
-<div class="screen active" id="home-screen"><div class="welcome"><h2 style="margin-top:20px">Sood &amp; Sud Family Trees</h2><div id="treeList"><div class="loading">Loading...</div></div><button class="sbtn" style="margin-top:16px" onclick="newTree()">&#10133; New tree</button>
-<div style="margin-top:12px"><button class="sbtn" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);box-shadow:none" onclick="showMega()">&#127758; View All Families</button></div></div></div>
+<div class="screen active" id="home-screen"><div class="welcome"><h2 style="margin-top:20px">Sood &amp; Sud Family Trees</h2><div id="treeList"><div class="loading">Loading...</div></div>
+<div style="display:flex;gap:10px;margin-top:16px;justify-content:center"><button class="sbtn" style="flex:1;max-width:220px" onclick="newTree()">&#10133; New tree</button><button class="sbtn" style="flex:1;max-width:220px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);box-shadow:none" onclick="showMega()">&#127758; All Families</button></div></div></div>
 <div class="screen" id="setup-screen"><div class="glass" id="formArea"></div></div>
 <div class="screen" id="tree-screen"><div class="tscr"><div class="tinn" id="tree"></div></div></div>
 <div class="screen" id="mega-screen"><div class="tscr"><div class="tinn" id="mega"></div></div></div>
@@ -137,11 +137,12 @@ function fbListenTree(tid){if(_listener)db.ref('trees/'+_listener).off();_listen
 function fbStopListen(){if(_listener){db.ref('trees/'+_listener).off();_listener=null}}
 
 /* === HOME === */
-function renderHome(){fbLoadList(function(list){var h='';list.forEach(function(t){h+='<div class="tc" onclick="openTree(\''+t.id+'\')"><h4>'+esc(t.name)+'</h4><p>'+t.count+' people</p></div>'});document.getElementById('treeList').innerHTML=h||'<p style="color:rgba(255,255,255,.4);font-size:14px">No trees yet. Create one!</p>'})}
+function renderHome(){db.ref('treeOrder').once('value').then(function(oSnap){var order=oSnap.val()||[];fbLoadList(function(list){if(order.length){list.sort(function(a,b){var ai=order.indexOf(a.id),bi=order.indexOf(b.id);if(ai===-1)ai=999;if(bi===-1)bi=999;return ai-bi})}var h='';list.forEach(function(t,i){h+='<div class="tc" style="display:flex;align-items:center;gap:10px"><div style="flex:1;cursor:pointer" onclick="openTree(\''+t.id+'\')"><h4>'+esc(t.name)+'</h4><p>'+t.count+' people</p></div><div style="display:flex;flex-direction:column;gap:2px">';if(i>0)h+='<button style="background:none;border:none;color:rgba(255,255,255,.5);font-size:16px;cursor:pointer;padding:2px 6px" onclick="event.stopPropagation();mvTree('+i+',-1)">&#9650;</button>';if(i<list.length-1)h+='<button style="background:none;border:none;color:rgba(255,255,255,.5);font-size:16px;cursor:pointer;padding:2px 6px" onclick="event.stopPropagation();mvTree('+i+',1)">&#9660;</button>';h+='</div></div>'});document.getElementById('treeList').innerHTML=h||'<p style="color:rgba(255,255,255,.4);font-size:14px">No trees yet. Create one!</p>'})})}
 function newTree(){document.getElementById('ntm').classList.add('show');setTimeout(function(){bindDate(document.getElementById('nt_dob'))},50)}
 function createTree(){var nm=(document.getElementById('nt_name')||{}).value?.trim();var yn=(document.getElementById('nt_yname')||{}).value?.trim();if(!nm){alert('Enter a tree name.');return}if(!yn){alert('Enter your name.');return}var tid='t'+Date.now();CUR=tid;PP={};NID=1;TNAME=nm;var id=gid();PP[id]={id:id,name:yn,nickname:'',gender:(document.getElementById('nt_gender')||{}).value||'Male',dob:((document.getElementById('nt_dob')||{}).value||'').trim(),dod:'',location:'',education1:'',education2:'',profession:'',company:'',about:'',hobbies:'',spouseId:null,parents:[],children:[]};SELF=id;fbSaveTree();document.getElementById('ntm').classList.remove('show');document.getElementById('bn').style.display='flex';fbListenTree(tid);go('tree-screen')}
 function openTree(tid){document.getElementById('tree').innerHTML='<div class="loading">Loading...</div>';fbLoadTree(tid,function(ok){if(ok){document.getElementById('bn').style.display='flex';fbListenTree(tid);go('tree-screen')}})}
 function backToList(){fbStopListen();CUR=null;PP={};SELF=null;document.getElementById('bn').style.display='none';go('home-screen')}
+function mvTree(idx,dir){db.ref('treeOrder').once('value').then(function(oSnap){var order=oSnap.val()||[];fbLoadList(function(list){if(order.length){list.sort(function(a,b){var ai=order.indexOf(a.id),bi=order.indexOf(b.id);if(ai===-1)ai=999;if(bi===-1)bi=999;return ai-bi})}else{order=list.map(function(t){return t.id})}var ids=list.map(function(t){return t.id});var ni=idx+dir;if(ni<0||ni>=ids.length)return;var tmp=ids[idx];ids[idx]=ids[ni];ids[ni]=tmp;db.ref('treeOrder').set(ids).then(function(){renderHome()})})})}
 function delTree(){if(!CUR)return;if(!confirm('Delete tree "'+TNAME+'"?'))return;db.ref('trees/'+CUR).remove();db.ref('treeList/'+CUR).remove();tDr();backToList()}
 
 /* === RELATIONS === */
@@ -288,15 +289,20 @@ function renderMega(mPP,tNames){
       else if(!sp||!mPP[sp]){var isSp=false;for(var o in mPP){if(mPP[o].spouseId===id&&mPP[o].parents&&mPP[o].parents.some(function(x){return mPP[x]})){isSp=true;break}}if(!isSp){seen[id]=1;roots.push([id,null])}}
     }
   }
+  /* Calculate relationship to root using the global getRelation */
+  var savedPP=PP,savedSELF=SELF;var megaRoot=roots.length?roots[0][0]:null;
+  PP=mPP;SELF=megaRoot;
+  var relCache={};for(var mid in mPP)relCache[mid]=getRelation(mid);
+  PP=savedPP;SELF=savedSELF;
   function mGetKids(a,b){var c={};if(mPP[a])(mPP[a].children||[]).forEach(function(k){if(mPP[k])c[k]=1});if(b&&mPP[b])(mPP[b].children||[]).forEach(function(k){if(mPP[k])c[k]=1});return Object.keys(c)}
   function mNode(id){var p=mPP[id];if(!p)return'';var g=p.gender==='Male'?'m':'f';
     var sub=[];if(p.dob)sub.push('b.\u00a0'+esc(p.dob));if(p.dod)sub.push('d.\u00a0'+esc(p.dod));
-    var tn=p._tn||'';
+    var rel=relCache[id]||'';
     return '<div class="node" onclick="megaTap(\''+p._tid+'\',\''+p._oid+'\')">'
       +'<div class="av '+g+'">'+ini(p.name)+'</div>'
       +'<div class="nlbl"><div class="nn">'+esc(p.name)+'</div>'
       +(sub.length?'<div class="ns">'+sub.join(' &middot; ')+'</div>':'')
-      +'<div class="nr">'+esc(tn)+'</div></div></div>'}
+      +(rel?'<div class="nr">'+esc(rel)+'</div>':'')+'</div></div>'}
   function mCouple(a,b){return '<div class="couple">'+mNode(a)+(b&&mPP[b]?'<div class="cl">&#10084;&#65039;</div>'+mNode(b):'')+'</div>'}
   function mUnit(pid,sid,depth){if(depth>10)return'';var kids=mGetKids(pid,sid);
     var h='<div class="fam">'+mCouple(pid,sid);
