@@ -66,7 +66,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-heig
 @media print{
   .bg{display:block!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .bg-dim{display:none!important}.topbar,.bnav,.rg,.brow,.dbg,.mbg{display:none!important}
-  .screen:not(#tree-screen){display:none!important}#tree-screen{display:block!important}.app{padding-top:0!important;padding-bottom:0!important}
+  .screen:not(#tree-screen):not(#mega-screen){display:none!important}#tree-screen.active,#mega-screen.active{display:block!important}.app{padding-top:0!important;padding-bottom:0!important}
   .nlbl{background:rgba(0,0,0,.7)!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .nn{color:#fff!important}.ns{color:rgba(255,255,255,.9)!important}.nr{color:#d4a030!important}
   .vl-gold{background:rgba(200,170,80,.5)!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
@@ -96,7 +96,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-heig
 <input type="file" id="i2" accept=".json" onchange="doImpMerge(event);tDr()" style="display:none">
 <button class="dwi" onclick="document.getElementById('i0').click()">&#128229; Import as new tree</button>
 <input type="file" id="i0" accept=".json" onchange="doImp(event);tDr()" style="display:none">
-<button class="dwi" onclick="go('tree-screen');setTimeout(function(){window.print()},300);tDr()">&#128438; Print / PDF</button>
+<button class="dwi" onclick="var ms=document.getElementById('mega-screen').classList.contains('active');if(!ms)go('tree-screen');setTimeout(function(){window.print()},300);tDr()">&#128438; Print / PDF</button>
 <div class="dsp"></div><button class="dwi dng" onclick="delTree()">&#128465; Delete this tree</button></div></div>
 <div class="mbg" id="am" onclick="if(event.target===this)cMdl()"><div class="mdl"><div class="hd"></div><h3 id="amt">Add</h3><div id="amb"></div></div></div>
 <div class="mbg" id="ntm" onclick="if(event.target===this)document.getElementById('ntm').classList.remove('show')"><div class="mdl"><div class="hd"></div><h3>New Family Tree</h3>
@@ -154,7 +154,7 @@ function getRelation(tid){
   if(me.parents&&me.parents.length){for(var i=0;i<me.parents.length;i++){var par=PP[me.parents[i]];if(par&&par.children&&par.children.indexOf(tid)>-1)return g==='Male'?'Brother':'Sister'}}
   if(me.parents){for(var i=0;i<me.parents.length;i++){var par=PP[me.parents[i]];if(par&&par.parents&&par.parents.indexOf(tid)>-1)return g==='Male'?'Grandfather':'Grandmother';if(par&&par.parents){for(var j=0;j<par.parents.length;j++){var gp=PP[par.parents[j]];if(gp&&gp.spouseId===tid)return g==='Male'?'Grandfather':'Grandmother'}}}}
   if(me.parents){for(var i=0;i<me.parents.length;i++){var par=PP[me.parents[i]];if(!par||!par.parents)continue;for(var j=0;j<par.parents.length;j++){var gp=PP[par.parents[j]];if(!gp||!gp.parents)continue;if(gp.parents.indexOf(tid)>-1)return g==='Male'?'Great-Grandfather':'Great-Grandmother'}}}
-  if(me.children){for(var i=0;i<me.children.length;i++){var ch=PP[me.children[i]];if(ch&&ch.children&&ch.children.indexOf(tid)>-1)return g==='Male'?'Grandson':'Granddaughter'}}
+  if(me.children){for(var i=0;i<me.children.length;i++){var ch=PP[me.children[i]];if(ch&&ch.children&&ch.children.indexOf(tid)>-1)return g==='Male'?'Grandson':'Granddaughter';if(ch&&ch.spouseId===tid)return g==='Male'?'Son-in-law':'Daughter-in-law'}}
   if(me.parents){for(var i=0;i<me.parents.length;i++){var par=PP[me.parents[i]];if(!par||!par.parents)continue;for(var j=0;j<par.parents.length;j++){var gp=PP[par.parents[j]];if(!gp||!gp.children)continue;for(var k=0;k<gp.children.length;k++){if(gp.children[k]!==me.parents[i]&&gp.children[k]===tid)return g==='Male'?'Uncle':'Aunt';var ua=PP[gp.children[k]];if(ua&&ua.spouseId===tid&&gp.children[k]!==me.parents[i])return g==='Male'?'Uncle':'Aunt'}}}}
   if(me.parents){for(var i=0;i<me.parents.length;i++){var par=PP[me.parents[i]];if(!par||!par.parents)continue;for(var j=0;j<par.parents.length;j++){var gp=PP[par.parents[j]];if(!gp||!gp.children)continue;for(var k=0;k<gp.children.length;k++){if(gp.children[k]===me.parents[i])continue;var ua=PP[gp.children[k]];if(ua&&ua.children&&ua.children.indexOf(tid)>-1)return 'Cousin'}}}}
   if(me.spouseId&&PP[me.spouseId]){var sp=PP[me.spouseId];if(sp.parents&&sp.parents.indexOf(tid)>-1)return g==='Male'?'Father-in-law':'Mother-in-law';if(sp.parents){for(var i=0;i<sp.parents.length;i++){var spar=PP[sp.parents[i]];if(spar&&spar.children){for(var k=0;k<spar.children.length;k++){if(spar.children[k]!==me.spouseId&&spar.children[k]===tid)return g==='Male'?'Brother-in-law':'Sister-in-law'}}}}}
@@ -293,6 +293,7 @@ function renderMega(mPP,tNames){
   var savedPP=PP,savedSELF=SELF;var megaRoot=roots.length?roots[0][0]:null;
   PP=mPP;SELF=megaRoot;
   var relCache={};for(var mid in mPP)relCache[mid]=getRelation(mid);
+  relCache[megaRoot]='';if(roots.length&&roots[0][1])relCache[roots[0][1]]='';
   PP=savedPP;SELF=savedSELF;
   function mGetKids(a,b){var c={};if(mPP[a])(mPP[a].children||[]).forEach(function(k){if(mPP[k])c[k]=1});if(b&&mPP[b])(mPP[b].children||[]).forEach(function(k){if(mPP[k])c[k]=1});return Object.keys(c)}
   function mNode(id){var p=mPP[id];if(!p)return'';var g=p.gender==='Male'?'m':'f';
@@ -317,7 +318,7 @@ function doExp(){var b=new Blob([JSON.stringify({pp:PP,self:SELF,nid:NID,name:TN
 function doImp(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){try{var d=JSON.parse(ev.target.result);if(!d.pp){alert('Invalid.');return}var tid='t'+Date.now();CUR=tid;PP=d.pp;SELF=d.self;NID=d.nid||100;TNAME=d.name||'Imported Tree';fbSaveTree();document.getElementById('bn').style.display='flex';fbListenTree(tid);go('tree-screen')}catch(x){alert('Invalid.')}};r.readAsText(f);e.target.value=''}
 function doImpMerge(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){try{var d=JSON.parse(ev.target.result);if(!d.pp){alert('Invalid.');return}var n=0;for(var id in d.pp){if(!PP[id]){PP[id]=d.pp[id];n++}else{var ex=PP[id],inc=d.pp[id];['nickname','dob','dod','location','education1','education2','profession','company','about','hobbies'].forEach(function(f){if(!ex[f]&&inc[f])ex[f]=inc[f]})}}if(d.nid>NID)NID=d.nid;fbSaveTree();go('tree-screen');alert(n+' new people merged!')}catch(x){alert('Invalid.')}};r.readAsText(f);e.target.value=''}
 
-window.addEventListener('afterprint',function(){if(CUR){document.getElementById('bn').style.display='flex';go('tree-screen')}});
+window.addEventListener('afterprint',function(){var megaActive=document.getElementById('mega-screen').classList.contains('active');if(megaActive){document.getElementById('bn').style.display='flex'}else if(CUR){document.getElementById('bn').style.display='flex';go('tree-screen')}});
 renderHome();
 </script>
 </body>
